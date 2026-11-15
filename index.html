@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Analyse prédictive du risque de départ · Cas fil rouge RH</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Fraunces:opsz,wght@9..144,600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f6f4ef; --card:#fff; --ink:#1f2328; --muted:#5d6470; --line:#e3dfd6;
+  --accent:#2f5d50; --accent-soft:#e3eee9; --on-accent:#fff;
+  --warn:#b4542d; --warn-soft:#f8e6dc; --ok:#2e6b3a; --ok-soft:#e2f0e4; --amber:#8a5f00; --amber-soft:#fbf0d4;
+  --hi:#c0573a; --mid:#d39b2a; --lo:#4f8f6c;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#16181b; --card:#1f2226; --ink:#eceae5; --muted:#a3a8b0; --line:#33373d;
+    --accent:#7fc2ad; --accent-soft:#22352f; --on-accent:#10201b;
+    --warn:#f0a07c; --warn-soft:#3a271f; --ok:#8fd19b; --ok-soft:#1f3324; --amber:#e7c06a; --amber-soft:#352d1a;
+    --hi:#e98a6c; --mid:#e7c06a; --lo:#7fc29a; }
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:"DM Sans",system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5}
+header{max-width:1100px;margin:0 auto;padding:26px 20px 6px}
+h1{font-family:Fraunces,serif;font-size:clamp(1.4rem,3vw,2rem);margin:0 0 4px}
+h2{font-family:Fraunces,serif;font-size:1.25rem;margin:0 0 6px}
+h3{font-size:1rem;margin:16px 0 8px}
+.sub,.muted{color:var(--muted)}
+nav{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+nav .wrap{max-width:1100px;margin:0 auto;display:flex;gap:6px;overflow-x:auto;padding:10px 20px}
+nav button{flex:none;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:8px 14px;border-radius:999px;font:inherit;font-size:.9rem;cursor:pointer}
+nav button.active{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+main{max-width:1100px;margin:0 auto;padding:20px}
+section{display:none} section.active{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
+.intro{border-left:4px solid var(--accent)}
+label.f{display:block;font-weight:500;margin:10px 0 4px}
+input[type=text],input[type=number],textarea,select{width:100%;border:1px solid var(--line);border-radius:10px;padding:8px 10px;font:inherit;background:var(--bg);color:var(--ink)}
+td input[type=number],td input[type=text]{padding:5px 6px;font-size:.88rem;min-width:62px}
+textarea{min-height:80px;resize:vertical}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.btn{border:1px solid var(--accent);background:var(--accent);color:var(--on-accent);padding:8px 13px;border-radius:9px;font:inherit;font-size:.9rem;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn.danger{background:transparent;color:var(--warn);border-color:var(--warn)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:820px){.grid2{grid-template-columns:1fr}}
+table{width:100%;border-collapse:collapse;font-size:.9rem}
+th,td{padding:7px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+th{font-size:.74rem;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);font-weight:500}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+tr.masked td{opacity:.5}
+.pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:.78rem;font-weight:500;white-space:nowrap}
+.p-ok{background:var(--ok-soft);color:var(--ok)} .p-warn{background:var(--warn-soft);color:var(--warn)}
+.p-amber{background:var(--amber-soft);color:var(--amber)} .p-n{background:var(--accent-soft);color:var(--accent)}
+.alert{border-radius:10px;padding:11px 14px;margin:10px 0;font-size:.92rem}
+.alert.warn{background:var(--warn-soft);color:var(--warn)} .alert.ok{background:var(--ok-soft);color:var(--ok)}
+.alert.info{background:var(--accent-soft);color:var(--accent)} .alert.amber{background:var(--amber-soft);color:var(--amber)}
+.fac{display:grid;grid-template-columns:1.6fr 120px 1fr 150px;gap:12px;align-items:center;padding:10px 0;border-bottom:1px dashed var(--line)}
+.fac:last-child{border-bottom:0}
+@media(max-width:820px){.fac{grid-template-columns:1fr 1fr}}
+.fac small{display:block;color:var(--muted);font-size:.8rem}
+.rbar{position:relative;height:10px;background:var(--line);border-radius:5px}
+.rbar i{position:absolute;top:0;height:100%;border-radius:5px}
+.rbar .mid{position:absolute;left:50%;top:-3px;bottom:-3px;width:1px;background:var(--muted)}
+.team{display:grid;grid-template-columns:200px 1fr 60px 130px;gap:12px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}
+@media(max-width:820px){.team{grid-template-columns:1fr 60px}}
+.hbar{height:14px;background:var(--line);border-radius:7px;overflow:hidden}
+.hbar i{display:block;height:100%;border-radius:7px}
+.why{grid-column:1/-1;font-size:.84rem;color:var(--muted);margin-top:-4px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:10px 0}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px}
+.kpi b{display:block;font-family:Fraunces,serif;font-size:1.5rem}
+.kpi span{color:var(--muted);font-size:.85rem}
+.check{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px dashed var(--line)}
+.check input{margin-top:4px;accent-color:var(--accent);width:18px;height:18px;flex:none}
+.check small{color:var(--muted);display:block}
+.detail{font-size:.85rem;color:var(--muted)}
+svg text{fill:var(--muted);font-family:"DM Sans",sans-serif;font-size:11px}
+.nextbar{display:flex;justify-content:space-between;margin-top:6px}
+footer{max-width:1100px;margin:0 auto;padding:6px 20px 40px;font-size:.82rem;color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+  <h1>Analyse prédictive du risque de départ</h1>
+  <p class="sub">Un outil pour anticiper le turnover <b>par équipe</b>, jamais par salarié. Données 100 % fictives.</p>
+</header>
+<nav><div class="wrap" id="tabs">
+  <button data-t="s1" class="active">1 · La question</button>
+  <button data-t="s2">2 · Les données</button>
+  <button data-t="s3">3 · Les facteurs</button>
+  <button data-t="s4">4 · La prédiction</button>
+  <button data-t="s5">5 · Simuler et agir</button>
+  <button data-t="s6">6 · Éthique</button>
+  <button data-t="s7">Sauvegarde</button>
+</div></nav>
+
+<main>
+<!-- 1 QUESTION -->
+<section id="s1" class="active">
+  <div class="card intro"><h2>Étape 1 · Poser la bonne question</h2>
+  <p>Un outil prédictif commence par une question précise. Ici : <b>« Dans quelles équipes le risque de départs volontaires sera-t-il élevé l'an prochain, et sur quels leviers agir ? »</b></p></div>
+  <div class="grid2">
+    <div class="card">
+      <h3>Le contexte</h3>
+      <label class="f">Entreprise</label><input type="text" id="entreprise">
+      <label class="f">Finalité de l'outil (à quoi il sert)</label><textarea id="finalite"></textarea>
+      <label class="f">Ce que l'outil ne fera jamais</label><textarea id="interdits"></textarea>
+    </div>
+    <div class="card">
+      <h3>Les 5 temps de la démarche</h3>
+      <ol>
+        <li><b>Données</b> : rassembler des indicateurs fiables, agrégés par équipe.</li>
+        <li><b>Facteurs</b> : choisir ceux qui peuvent expliquer les départs et vérifier leur lien avec le passé.</li>
+        <li><b>Prédiction</b> : calculer un score de risque par équipe, et comprendre pourquoi.</li>
+        <li><b>Action</b> : simuler l'effet d'un levier et construire un plan d'action.</li>
+        <li><b>Éthique</b> : vérifier que l'outil protège les salariés et respecte le cadre.</li>
+      </ol>
+      <div class="alert info">Un score prédictif est une <b>alerte pour ouvrir le dialogue</b>, pas un verdict. Il ne dit jamais <i>pourquoi</i> les gens partent : seules les personnes concernées peuvent le dire.</div>
+    </div>
+  </div>
+  <div class="nextbar"><span></span><button class="btn" data-go="s2">Étape suivante</button></div>
+</section>
+
+<!-- 2 DONNEES -->
+<section id="s2">
+  <div class="card intro"><h2>Étape 2 · Préparer les données</h2>
+  <p>Chaque ligne est une <b>équipe</b>, jamais une personne. Les équipes trop petites sont masquées : avec 5 personnes, une moyenne permet vite de reconnaître quelqu'un. La colonne « Turnover N-1 » est l'historique qui servira à tester l'outil.</p></div>
+  <div class="card">
+    <div class="row" style="justify-content:space-between">
+      <div class="row"><label for="seuil" style="font-weight:500">Seuil de confidentialité : effectif minimum</label>
+      <input type="number" id="seuil" min="3" max="30" style="width:80px"></div>
+      <div class="row"><button class="btn ghost" id="addTeam">+ Ajouter une équipe</button></div>
+    </div>
+    <div style="overflow-x:auto;margin-top:12px"><table id="dataTable"></table></div>
+    <div id="dataAlert"></div>
+  </div>
+  <div class="card">
+    <h3>Importer vos propres données (facultatif)</h3>
+    <p class="detail">Copiez un tableau depuis Excel ou Google Sheets, avec les colonnes dans cet ordre : Équipe, Effectif, Turnover N-1, puis les 8 indicateurs dans l'ordre du tableau ci-dessus. Collez-le ici, sans la ligne d'en-tête.</p>
+    <textarea id="pasteIn" placeholder="Entrepôt jour	30	20	2,8	45	60	6	60	6	5,9	-6"></textarea>
+    <div class="row" style="margin-top:8px"><button class="btn" id="doPaste">Remplacer les données</button><span id="pasteMsg" class="muted"></span></div>
+  </div>
+  <div class="nextbar"><button class="btn ghost" data-go="s1">Retour</button><button class="btn" data-go="s3">Étape suivante</button></div>
+</section>
+
+<!-- 3 FACTEURS -->
+<section id="s3">
+  <div class="card intro"><h2>Étape 3 · Choisir et pondérer les facteurs</h2>
+  <p>Pour chaque indicateur, l'outil mesure son <b>lien avec le turnover passé</b> (corrélation, de -1 à +1). Un lien fort suggère un facteur utile, mais <b>une corrélation n'est pas une cause</b>. Réglez ensuite le poids de chaque facteur, de 0 (ignoré) à 5.</p></div>
+  <div class="card">
+    <div class="fac" style="font-size:.74rem;text-transform:uppercase;color:var(--muted);letter-spacing:.03em"><div>Facteur</div><div>Lien avec le passé</div><div></div><div>Poids</div></div>
+    <div id="facList"></div>
+    <div class="row" style="margin-top:12px"><button class="btn ghost" id="wDef">Poids d'origine</button><button class="btn ghost" id="wCorr">Poids suggérés par les corrélations</button><button class="btn ghost" id="wEq">Tous à 1</button></div>
+    <div id="facAlert"></div>
+  </div>
+  <div class="nextbar"><button class="btn ghost" data-go="s2">Retour</button><button class="btn" data-go="s4">Étape suivante</button></div>
+</section>
+
+<!-- 4 PREDICTION -->
+<section id="s4">
+  <div class="card intro"><h2>Étape 4 · Lire la prédiction</h2>
+  <p>Chaque équipe reçoit un score de risque de 0 à 100. Ce n'est pas une probabilité : c'est une position <b>relative</b> par rapport aux autres équipes. Sous chaque barre, les facteurs qui pèsent le plus expliquent le score.</p></div>
+  <div class="kpis" id="predKpis"></div>
+  <div class="card" id="predList"></div>
+  <div class="card">
+    <h3>Test : l'outil retrouve-t-il le passé ?</h3>
+    <p class="detail">Chaque point est une équipe : score calculé par l'outil (horizontal) et turnover réel de l'an dernier (vertical). Plus les points suivent une ligne montante, plus l'outil est cohérent avec le passé.</p>
+    <div class="grid2"><div id="scatter"></div><div id="backtest"></div></div>
+  </div>
+  <div class="nextbar"><button class="btn ghost" data-go="s3">Retour</button><button class="btn" data-go="s5">Étape suivante</button></div>
+</section>
+
+<!-- 5 SIMULER -->
+<section id="s5">
+  <div class="card intro"><h2>Étape 5 · Simuler un levier et décider d'une action</h2>
+  <p>Choisissez une équipe, faites varier un indicateur et observez l'effet sur le score. Puis formalisez l'action : qui fait quoi, pour quand, et comment on saura que ça marche.</p></div>
+  <div class="grid2">
+    <div class="card">
+      <label class="f">Équipe</label><select id="simTeam"></select>
+      <div id="simSliders"></div>
+      <button class="btn ghost" id="simReset" style="margin-top:10px">Revenir aux valeurs réelles</button>
+    </div>
+    <div class="card">
+      <div class="kpis" id="simKpis"></div>
+      <h3>Leviers possibles</h3>
+      <div id="levers"></div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>Plan d'action pour cette équipe</h3>
+    <div class="grid2">
+      <div><label class="f">Action retenue</label><textarea id="actAction" placeholder="Ex. : entretien collectif avec l'équipe pour comprendre les attentes, puis plan de formation sur 6 mois"></textarea></div>
+      <div>
+        <label class="f">Responsable</label><input type="text" id="actResp" placeholder="Ex. : manager d'équipe avec la RRH">
+        <label class="f">Échéance</label><input type="text" id="actDate" placeholder="Ex. : fin mars">
+        <label class="f">Indicateur de réussite</label><input type="text" id="actInd" placeholder="Ex. : 80 % de l'équipe formée, engagement à 6/10">
+      </div>
+    </div>
+    <div class="alert info">Première action conseillée, quel que soit le score : <b>aller écouter l'équipe</b>. Les données montrent où regarder, pas ce que vivent les personnes.</div>
+  </div>
+  <div class="nextbar"><button class="btn ghost" data-go="s4">Retour</button><button class="btn" data-go="s6">Étape suivante</button></div>
+</section>
+
+<!-- 6 ETHIQUE -->
+<section id="s6">
+  <div class="card intro"><h2>Étape 6 · Vérifier l'éthique et la conformité</h2>
+  <p>Cochez uniquement ce que votre dispositif garantit réellement. Pour chaque case vide, nommez la personne qui devrait s'en charger.</p></div>
+  <div class="card" id="checklist"></div>
+  <div class="card">
+    <h3>Questions pour le débat</h3>
+    <ul>
+      <li>Un score « élevé » affiché pour une équipe peut-il stigmatiser son manager ? Comment l'éviter ?</li>
+      <li>Qui doit avoir accès à cet outil : la DRH, les managers, le CSE, les salariés ?</li>
+      <li>Qu'est-ce qui changerait si l'outil calculait un score par salarié ?</li>
+    </ul>
+  </div>
+  <div class="nextbar"><button class="btn ghost" data-go="s5">Retour</button><button class="btn" data-go="s7">Sauvegarde</button></div>
+</section>
+
+<!-- 7 SAUVEGARDE -->
+<section id="s7">
+  <div class="card intro"><h2>Sauvegarde et export</h2>
+  <p>Le travail est enregistré automatiquement dans ce navigateur. Exportez-le pour le transmettre ou changer d'ordinateur.</p></div>
+  <div class="card">
+    <div class="row">
+      <button class="btn" id="copyRes">Copier les résultats pour un tableur</button>
+      <button class="btn ghost" id="dlProj">Télécharger le projet (.json)</button>
+      <label class="btn ghost" style="display:inline-block">Importer un projet<input type="file" id="projIn" accept=".json" hidden></label>
+      <button class="btn danger" id="resetAll">Revenir au cas d'exemple</button>
+    </div>
+    <div id="saveMsg" class="muted" style="margin-top:8px"></div>
+  </div>
+</section>
+</main>
+<footer>Cas pédagogique. Entreprise, équipes et chiffres fictifs. Ne constitue pas un avis juridique.</footer>
+
+<script>
+/* ===================== DONNÉES DU CAS ===================== */
+const FACTEURS=[
+ {k:"anc",n:"Ancienneté moyenne",u:"ans",sens:-1,w:1,d:"Plus elle est faible, plus le risque est élevé",min:0,max:20,step:.1},
+ {k:"aug",n:"Sans augmentation depuis 2 ans",u:"%",sens:1,w:3,d:"Part de l'équipe",min:0,max:100,step:1},
+ {k:"form",n:"Sans formation depuis 12 mois",u:"%",sens:1,w:2,d:"Part de l'équipe",min:0,max:100,step:1},
+ {k:"abs",n:"Taux d'absentéisme",u:"%",sens:1,w:2,d:"Signal possible de mal-être ou de surcharge",min:0,max:20,step:.1},
+ {k:"ent",n:"Entretiens annuels réalisés",u:"%",sens:-1,w:2,d:"Plus il est faible, plus le risque est élevé",min:0,max:100,step:1},
+ {k:"hs",n:"Heures supplémentaires",u:"h/mois",sens:1,w:1,d:"Moyenne par personne",min:0,max:40,step:1},
+ {k:"eng",n:"Engagement (baromètre social)",u:"/10",sens:-1,w:3,d:"Plus il est faible, plus le risque est élevé",min:0,max:10,step:.1},
+ {k:"sal",n:"Écart de salaire avec le marché",u:"%",sens:-1,w:3,d:"Négatif = en dessous du marché",min:-30,max:30,step:1}
+];
+const EQUIPES=[
+ {n:"Exploitation transport",eff:14,turn:18,anc:4.5,aug:40,form:55,abs:4,ent:70,hs:12,eng:6.1,sal:-9},
+ {n:"Conducteurs site Nord",eff:38,turn:24,anc:3.2,aug:55,form:70,abs:7.5,ent:50,hs:18,eng:5.2,sal:-8},
+ {n:"Conducteurs site Sud",eff:34,turn:12,anc:6,aug:50,form:65,abs:7,ent:55,hs:16,eng:6.8,sal:-3},
+ {n:"Entrepôt équipe de jour",eff:30,turn:20,anc:2.8,aug:45,form:60,abs:6,ent:60,hs:6,eng:5.9,sal:-6},
+ {n:"Entrepôt équipe de nuit",eff:22,turn:31,anc:2.1,aug:60,form:50,abs:9,ent:65,hs:8,eng:4.6,sal:2},
+ {n:"Maintenance",eff:9,turn:8,anc:9.5,aug:20,form:60,abs:6,ent:90,hs:14,eng:7.2,sal:-6},
+ {n:"Service client",eff:11,turn:27,anc:1.9,aug:30,form:30,abs:4,ent:75,hs:4,eng:5,sal:0},
+ {n:"Administration et finance",eff:8,turn:6,anc:8,aug:25,form:30,abs:2.5,ent:95,hs:2,eng:7,sal:0},
+ {n:"Commercial",eff:7,turn:14,anc:4,aug:35,form:50,abs:2,ent:80,hs:6,eng:6.5,sal:5},
+ {n:"Ressources humaines",eff:6,turn:0,anc:5,aug:20,form:20,abs:2,ent:100,hs:3,eng:7.5,sal:0}
+];
+const LEVIERS={
+ anc:"Soigner l'intégration des nouveaux : parrainage, rapport d'étonnement à 3 mois, point à 6 mois.",
+ aug:"Revue salariale ciblée, critères d'augmentation transparents, reconnaissance non financière.",
+ form:"Plan de développement des compétences, parcours qualifiants, formations courtes en situation de travail.",
+ abs:"Analyse des conditions de travail avec le CSE, prévention des risques, organisation des plannings.",
+ ent:"Relancer les entretiens annuels et professionnels, former les managers à la conduite d'entretien.",
+ hs:"Analyser la charge, renforcer l'équipe, recruter ou lisser l'activité.",
+ eng:"Écouter l'équipe : entretien collectif, enquête qualitative, groupe de travail sur les irritants.",
+ sal:"Benchmark salarial, révision des grilles, avantages (mutuelle, titres-restaurant, mobilité)."
+};
+const CHECKS=[
+ ["La finalité de l'outil est écrite, limitée et connue : anticiper pour agir, jamais sanctionner.","Principe de finalité, RGPD"],
+ ["Aucun score individuel n'est calculé ni affiché.","Choix de conception"],
+ ["Les équipes sous le seuil de confidentialité sont masquées.","Prévention de la réidentification"],
+ ["Seules les données utiles sont utilisées, et leur source est connue.","Minimisation et qualité des données"],
+ ["Le CSE a été informé et consulté avant la mise en place.","Dialogue social, nouvelles technologies"],
+ ["Les salariés sont informés de l'existence de l'outil et de ses indicateurs.","Transparence"],
+ ["Chaque score peut être expliqué par ses facteurs.","Explicabilité"],
+ ["Les résultats ne sont pas utilisés pour évaluer un manager.","Prévention de la stigmatisation"],
+ ["Le modèle est revu chaque année avec les nouvelles données.","Fiabilité dans le temps"],
+ ["Chaque alerte donne lieu à une écoute de l'équipe avant toute action.","Décision humaine"]
+];
+
+/* ===================== ÉTAT ===================== */
+const KEY="predictif_v1";
+function defaults(){return{entreprise:"PME de transport et logistique (fictive), 180 salariés",
+ finalite:"Repérer les équipes où le risque de départs volontaires est élevé, pour prioriser les actions de fidélisation (formation, rémunération, conditions de travail).",
+ interdits:"Calculer un score par salarié. Servir à évaluer ou sanctionner un manager. Remplacer l'écoute des équipes.",
+ seuil:8,equipes:JSON.parse(JSON.stringify(EQUIPES)),poids:Object.fromEntries(FACTEURS.map(f=>[f.k,f.w])),sim:{},simTeam:0,actions:{},checks:{}}}
+let S;
+try{S=JSON.parse(localStorage.getItem(KEY))||defaults()}catch(e){S=defaults()}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));
+const fmt=(v,d=1)=>(+v).toLocaleString("fr-FR",{maximumFractionDigits:d});
+
+/* ===================== MOTEUR ===================== */
+const visibles=()=>S.equipes.filter(e=>+e.eff>=+S.seuil);
+function bornes(){const V=visibles(),b={};FACTEURS.forEach(f=>{const xs=V.map(e=>+e[f.k]);b[f.k]=[Math.min(...xs),Math.max(...xs)]});return b}
+function risqueNorm(f,v,b){const[mn,mx]=b[f.k];let n=mx>mn?(v-mn)/(mx-mn):.5;n=Math.max(0,Math.min(1,n));return f.sens>0?n:1-n}
+function scoreEq(e,b,over){
+ const tw=FACTEURS.reduce((a,f)=>a+(+S.poids[f.k]||0),0)||1;let s=0;const contrib=[];
+ FACTEURS.forEach(f=>{const v=over&&over[f.k]!==undefined?+over[f.k]:+e[f.k];const c=(+S.poids[f.k]||0)*risqueNorm(f,v,b);s+=c;contrib.push({f,c:c/tw*100})});
+ contrib.sort((a,b)=>b.c-a.c);
+ return{score:Math.round(s/tw*100),contrib};
+}
+function niveau(s){return s>=60?["Risque élevé","p-warn","var(--hi)"]:s>=40?["Risque modéré","p-amber","var(--mid)"]:["Risque faible","p-ok","var(--lo)"]}
+function pearson(xs,ys){const n=xs.length;if(n<3)return 0;const mx=xs.reduce((a,b)=>a+b)/n,my=ys.reduce((a,b)=>a+b)/n;let num=0,dx=0,dy=0;
+ for(let i=0;i<n;i++){num+=(xs[i]-mx)*(ys[i]-my);dx+=(xs[i]-mx)**2;dy+=(ys[i]-my)**2}return dx&&dy?num/Math.sqrt(dx*dy):0}
+function force(r){const a=Math.abs(r);return a>=.7?"fort":a>=.4?"moyen":a>=.2?"faible":"quasi nul"}
+
+/* ===================== ÉTAPE 1 ===================== */
+function bind1(){["entreprise","finalite","interdits"].forEach(k=>{$(k).value=S[k];$(k).oninput=e=>{S[k]=e.target.value;save()}})}
+
+/* ===================== ÉTAPE 2 ===================== */
+function renderData(){
+ $("seuil").value=S.seuil;
+ const cols=[["n","Équipe","text"],["eff","Effectif"],["turn","Turnover N-1 (%)"],...FACTEURS.map(f=>[f.k,f.n+" ("+f.u+")"])];
+ $("dataTable").innerHTML=`<thead><tr>${cols.map(c=>`<th>${esc(c[1])}</th>`).join("")}<th></th></tr></thead><tbody>`+
+ S.equipes.map((e,i)=>{const m=+e.eff<+S.seuil;return`<tr class="${m?"masked":""}">${cols.map(c=>`<td><input type="${c[2]||"number"}" step="any" value="${esc(e[c[0]])}" data-i="${i}" data-k="${c[0]}" ${c[0]==="n"?'style="min-width:170px"':""}></td>`).join("")}
+ <td>${m?'<span class="pill p-n">Masquée</span>':""} <button class="btn danger" data-del="${i}" title="Supprimer">×</button></td></tr>`}).join("")+"</tbody>";
+ $("dataTable").querySelectorAll("input").forEach(x=>x.onchange=ev=>{const k=ev.target.dataset.k;S.equipes[ev.target.dataset.i][k]=k==="n"?ev.target.value:+String(ev.target.value).replace(",",".");save();renderData()});
+ $("dataTable").querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{S.equipes.splice(+b.dataset.del,1);save();renderData()});
+ const V=visibles(),M=S.equipes.length-V.length,eff=S.equipes.reduce((a,e)=>a+(+e.eff||0),0);
+ $("dataAlert").innerHTML=`<div class="alert info">${S.equipes.length} équipes, ${eff} salariés. <b>${M}</b> équipe(s) masquée(s) car sous le seuil de ${S.seuil} personnes : elles ne sont ni analysées ni affichées dans les résultats.</div>`+
+ (V.length<5?`<div class="alert warn">Moins de 5 équipes analysées : les résultats ne sont pas fiables.</div>`:`<div class="alert amber">Avec seulement ${V.length} équipes, toute conclusion reste fragile. Un vrai outil s'appuie sur plusieurs années d'historique.</div>`);
+}
+
+/* ===================== ÉTAPE 3 ===================== */
+function corrs(){const V=visibles(),y=V.map(e=>+e.turn);return Object.fromEntries(FACTEURS.map(f=>[f.k,pearson(V.map(e=>+e[f.k]),y)]))}
+function renderFac(){
+ const R=corrs();
+ $("facList").innerHTML=FACTEURS.map(f=>{const r=R[f.k],attendu=Math.sign(r)===f.sens||Math.abs(r)<.2;
+  const w=Math.abs(r)*50,left=r>=0?50:50-w;
+  return`<div class="fac"><div><b>${esc(f.n)}</b><small>${esc(f.d)}</small></div>
+  <div><div class="rbar"><span class="mid"></span><i style="left:${left}%;width:${w}%;background:${r>=0?"var(--hi)":"var(--lo)"}"></i></div></div>
+  <div class="detail">r = ${fmt(r,2)} · lien ${force(r)}${!attendu?' <span class="pill p-amber">sens inattendu</span>':""}</div>
+  <div class="row" style="flex-wrap:nowrap"><input type="range" min="0" max="5" value="${S.poids[f.k]}" data-k="${f.k}"><b style="width:18px;text-align:right">${S.poids[f.k]}</b></div></div>`}).join("");
+ $("facList").querySelectorAll("input").forEach(x=>x.oninput=e=>{S.poids[e.target.dataset.k]=+e.target.value;e.target.nextElementSibling.textContent=e.target.value;save()});
+ const zero=FACTEURS.every(f=>!+S.poids[f.k]);
+ $("facAlert").innerHTML=zero?'<div class="alert warn">Tous les poids sont à 0 : l\'outil ne peut rien calculer.</div>':
+ '<div class="alert info"><b>À discuter en équipe :</b> un facteur très corrélé au turnover peut être une conséquence plutôt qu\'une cause. Par exemple, une équipe qui perd beaucoup de monde a mécaniquement une ancienneté moyenne faible.</div>';
+}
+
+/* ===================== ÉTAPE 4 ===================== */
+function results(){const b=bornes();return visibles().map(e=>({...e,...scoreEq(e,b)})).sort((a,c)=>c.score-a.score)}
+function renderPred(){
+ const R=results();if(!R.length){$("predList").innerHTML="Aucune équipe analysable.";return}
+ const c=k=>R.filter(r=>niveau(r.score)[0]===k).length;
+ $("predKpis").innerHTML=`<div class="kpi"><b>${R.length}</b><span>équipes analysées</span></div>
+ <div class="kpi"><b>${c("Risque élevé")}</b><span>à risque élevé (60 et plus)</span></div>
+ <div class="kpi"><b>${c("Risque modéré")}</b><span>à risque modéré (40 à 59)</span></div>
+ <div class="kpi"><b>${c("Risque faible")}</b><span>à risque faible</span></div>`;
+ $("predList").innerHTML=R.map(r=>{const nv=niveau(r.score);return`<div class="team">
+  <div><b>${esc(r.n)}</b><br><span class="detail">${r.eff} salariés</span></div>
+  <div class="hbar"><i style="width:${Math.max(2,r.score)}%;background:${nv[2]}"></i></div>
+  <div class="num" style="font-weight:700;text-align:right">${r.score}</div>
+  <div><span class="pill ${nv[1]}">${nv[0]}</span></div>
+  <div class="why">Pèsent le plus : ${r.contrib.filter(x=>x.c>0).slice(0,3).map(x=>`${esc(x.f.n)} (${fmt(r[x.f.k])} ${x.f.u})`).join(" · ")||"aucun facteur"}</div></div>`}).join("");
+ // nuage de points
+ const W=420,H=280,p=38,xs=R.map(r=>r.score),ys=R.map(r=>+r.turn),ymax=Math.max(5,...ys)*1.1;
+ const X=v=>p+v/100*(W-p-10),Y=v=>H-p-v/ymax*(H-p-10);
+ const rr=pearson(xs,ys);
+ $("scatter").innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Score de risque et turnover réel par équipe">
+  <line x1="${p}" y1="${H-p}" x2="${W-10}" y2="${H-p}" stroke="var(--line)"/><line x1="${p}" y1="10" x2="${p}" y2="${H-p}" stroke="var(--line)"/>
+  ${[0,25,50,75,100].map(v=>`<text x="${X(v)}" y="${H-p+16}" text-anchor="middle">${v}</text>`).join("")}
+  ${[0,.5,1].map(t=>`<text x="${p-6}" y="${Y(t*ymax)+4}" text-anchor="end">${Math.round(t*ymax)}</text>`).join("")}
+  <text x="${(W+p)/2}" y="${H-4}" text-anchor="middle">Score de risque calculé</text>
+  <text x="12" y="${(H-p)/2}" text-anchor="middle" transform="rotate(-90 12 ${(H-p)/2})">Turnover N-1 (%)</text>
+  ${R.map(r=>`<circle cx="${X(r.score)}" cy="${Y(+r.turn)}" r="6" fill="${niveau(r.score)[2]}" opacity=".85"><title>${esc(r.n)} : score ${r.score}, turnover ${r.turn} %</title></circle>`).join("")}
+ </svg>`;
+ $("backtest").innerHTML=`<div class="kpi"><b>r = ${fmt(rr,2)}</b><span>corrélation entre le score et le turnover réel (lien ${force(rr)})</span></div>
+ ${rr>=.7?'<div class="alert ok">L\'outil est cohérent avec le passé. Attention : avoir réglé les poids en regardant ce même passé rend ce test trop flatteur. Le vrai test sera l\'année prochaine.</div>'
+ :rr>=.4?'<div class="alert amber">Cohérence moyenne avec le passé. Revoyez les facteurs et les poids à l\'étape 3.</div>'
+ :'<div class="alert warn">L\'outil ne retrouve pas le passé : ses alertes ne sont pas fiables. Revoyez les facteurs et les poids.</div>'}
+ <p class="detail">Survolez un point pour voir l'équipe.</p>`;
+}
+
+/* ===================== ÉTAPE 5 ===================== */
+function renderSim(){
+ const V=visibles();if(!V.length)return;
+ if(S.simTeam>=V.length)S.simTeam=0;
+ $("simTeam").innerHTML=V.map((e,i)=>`<option value="${i}" ${i==S.simTeam?"selected":""}>${esc(e.n)}</option>`).join("");
+ const e=V[S.simTeam],ov=S.sim[e.n]||{};
+ $("simSliders").innerHTML=FACTEURS.map(f=>{const v=ov[f.k]!==undefined?ov[f.k]:e[f.k];return`<label class="f">${esc(f.n)} : <b data-v="${f.k}">${fmt(v)} ${f.u}</b> <span class="detail">(réel : ${fmt(e[f.k])})</span></label>
+  <input type="range" min="${f.min}" max="${f.max}" step="${f.step}" value="${v}" data-k="${f.k}">`}).join("");
+ $("simSliders").querySelectorAll("input").forEach(x=>x.oninput=ev=>{S.sim[e.n]=S.sim[e.n]||{};S.sim[e.n][ev.target.dataset.k]=+ev.target.value;
+  $("simSliders").querySelector(`[data-v="${ev.target.dataset.k}"]`).textContent=fmt(ev.target.value)+" "+FACTEURS.find(f=>f.k===ev.target.dataset.k).u;save();simKpis()});
+ const a=S.actions[e.n]||{};[["actAction","action"],["actResp","resp"],["actDate","date"],["actInd","ind"]].forEach(([id,k])=>{$(id).value=a[k]||"";$(id).oninput=ev=>{S.actions[e.n]=S.actions[e.n]||{};S.actions[e.n][k]=ev.target.value;save()}});
+ simKpis();
+}
+function simKpis(){
+ const V=visibles(),e=V[S.simTeam],b=bornes(),base=scoreEq(e,b),sim=scoreEq(e,b,S.sim[e.n]),d=sim.score-base.score;
+ $("simKpis").innerHTML=`<div class="kpi"><b>${base.score}</b><span>score actuel · ${niveau(base.score)[0].toLowerCase()}</span></div>
+ <div class="kpi"><b>${sim.score} <span style="font-size:1rem;color:${d<0?"var(--ok)":d>0?"var(--warn)":"var(--muted)"}">${d>0?"+":""}${d}</span></b><span>score simulé · ${niveau(sim.score)[0].toLowerCase()}</span></div>`;
+ $("levers").innerHTML=base.contrib.filter(x=>x.c>0).slice(0,3).map(x=>`<p><b>${esc(x.f.n)}</b><br><span class="detail">${esc(LEVIERS[x.f.k])}</span></p>`).join("");
+}
+
+/* ===================== ÉTAPE 6 ===================== */
+function renderChecks(){
+ const n=Object.values(S.checks).filter(Boolean).length;
+ $("checklist").innerHTML=`<div class="row" style="justify-content:space-between"><h3 style="margin:0">Votre dispositif</h3><span class="pill ${n>=9?"p-ok":n>=6?"p-amber":"p-warn"}">${n} / ${CHECKS.length}</span></div>`+
+ CHECKS.map((c,i)=>`<label class="check"><input type="checkbox" data-i="${i}" ${S.checks[i]?"checked":""}><div>${esc(c[0])}<small>${esc(c[1])}</small></div></label>`).join("");
+ $("checklist").querySelectorAll("input").forEach(x=>x.onchange=e=>{S.checks[e.target.dataset.i]=e.target.checked;save();renderChecks()});
+}
+
+/* ===================== EXPORT ===================== */
+function tsv(){
+ const R=results(),rows=[["Équipe","Effectif","Turnover N-1 (%)","Score de risque","Niveau","Facteurs principaux","Action","Responsable","Échéance","Indicateur"]];
+ R.forEach(r=>{const a=S.actions[r.n]||{};rows.push([r.n,r.eff,r.turn,r.score,niveau(r.score)[0],r.contrib.slice(0,3).map(x=>x.f.n).join(" / "),a.action||"",a.resp||"",a.date||"",a.ind||""])});
+ return rows.map(r=>r.map(v=>String(v).replace(/[\t\n]/g," ")).join("\t")).join("\n");
+}
+
+/* ===================== NAVIGATION ===================== */
+function go(t){
+ document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("active",b.dataset.t===t));
+ document.querySelectorAll("section").forEach(s=>s.classList.toggle("active",s.id===t));
+ if(t==="s2")renderData(); if(t==="s3")renderFac(); if(t==="s4")renderPred(); if(t==="s5")renderSim(); if(t==="s6")renderChecks();
+ window.scrollTo({top:0,behavior:"smooth"});
+}
+document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>go(b.dataset.t));
+document.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>go(b.dataset.go));
+$("seuil").onchange=e=>{S.seuil=Math.max(1,+e.target.value||1);save();renderData()};
+$("addTeam").onclick=()=>{S.equipes.push({n:"Nouvelle équipe",eff:10,turn:0,...Object.fromEntries(FACTEURS.map(f=>[f.k,0]))});save();renderData()};
+$("doPaste").onclick=()=>{
+ const lines=$("pasteIn").value.trim().split(/\r?\n/).filter(Boolean),keys=["n","eff","turn",...FACTEURS.map(f=>f.k)],out=[];
+ for(const l of lines){const c=l.split("\t");if(c.length<keys.length){$("pasteMsg").textContent=`Ligne incomplète : « ${l.slice(0,40)} ». Il faut ${keys.length} colonnes.`;return}
+  const o={};keys.forEach((k,i)=>o[k]=k==="n"?c[i].trim():+c[i].replace(",",".").replace("%","").trim());out.push(o)}
+ if(!out.length){$("pasteMsg").textContent="Rien à importer.";return}
+ S.equipes=out;S.sim={};S.actions={};save();renderData();$("pasteMsg").textContent=out.length+" équipes importées.";
+};
+$("wDef").onclick=()=>{FACTEURS.forEach(f=>S.poids[f.k]=f.w);save();renderFac()};
+$("wEq").onclick=()=>{FACTEURS.forEach(f=>S.poids[f.k]=1);save();renderFac()};
+$("wCorr").onclick=()=>{const R=corrs();FACTEURS.forEach(f=>{const r=R[f.k];S.poids[f.k]=Math.sign(r)===f.sens?Math.round(Math.abs(r)*5):0});save();renderFac()};
+$("simTeam").onchange=e=>{S.simTeam=+e.target.value;save();renderSim()};
+$("simReset").onclick=()=>{const e=visibles()[S.simTeam];delete S.sim[e.n];save();renderSim()};
+$("copyRes").onclick=async()=>{try{await navigator.clipboard.writeText(tsv());$("saveMsg").textContent="Copié. Collez dans votre tableur."}catch(e){$("saveMsg").textContent="Copie impossible dans ce navigateur."}};
+$("dlProj").onclick=()=>{try{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(S,null,2)],{type:"application/json"}));a.download="projet-predictif.json";document.body.appendChild(a);a.click();a.remove()}catch(e){$("saveMsg").textContent="Téléchargement impossible dans ce navigateur."}};
+$("projIn").onchange=async e=>{try{S=JSON.parse(await e.target.files[0].text());save();bind1();go("s1")}catch(err){$("saveMsg").textContent="Fichier de projet illisible."}};
+$("resetAll").onclick=()=>{const b=$("resetAll");if(b.dataset.c){S=defaults();save();bind1();go("s1");b.textContent="Revenir au cas d'exemple";delete b.dataset.c}else{b.dataset.c=1;b.textContent="Confirmer : tout effacer";setTimeout(()=>{b.textContent="Revenir au cas d'exemple";delete b.dataset.c},4000)}};
+bind1();
+</script>
+</body>
+</html>
